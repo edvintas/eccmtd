@@ -2,8 +2,11 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
+#include "sblkdev.h"
+
 static int eccmtd_init(void) {
 	printk(KERN_INFO "eccmtd loaded 123");
+//	dev = sblkdev_add(sblkdev_major, inx, name, capacity_value);
 	return 0;
 }
 

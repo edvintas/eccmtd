@@ -1,6 +1,6 @@
 NAME:= eccmtd
 
-obj-m += ${NAME}.o
+obj-m += ${NAME}.o device.o sblkdev.o
 
 build:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules

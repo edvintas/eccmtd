@@ -3,6 +3,7 @@
 *.mod.c
 *.mod
 *.o
+*.d
 modules.order
 Module.symvers
 MOK.der

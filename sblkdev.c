@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
+// MODULE_AUTHOR("Sergei Shtepa");
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
@@ -141,11 +142,3 @@ static void __exit sblkdev_exit(void)
 		unregister_blkdev(sblkdev_major, KBUILD_MODNAME);
 }
 
-module_init(sblkdev_init);
-module_exit(sblkdev_exit);
-
-module_param_named(catalog, sblkdev_catalog, charp, 0644);
-MODULE_PARM_DESC(catalog, "New block devices catalog in format '<name>,<capacity sectors>;...'");
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Sergei Shtepa");

@@ -1,0 +1,8 @@
+-Q
+-xf
+-T
+-j
+-U
+-i
+-n
+--exclude=*.mod.c

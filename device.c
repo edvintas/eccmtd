@@ -9,6 +9,7 @@
 
 static inline int process_request(struct request *rq, unsigned int *nr_bytes)
 {
+	pr_info("Processing request: %d", *nr_bytes);
 	int ret = 0;
 	struct bio_vec bvec;
 	struct req_iterator iter;
@@ -122,9 +123,9 @@ void _submit_bio(struct bio *bio)
 #endif /* CONFIG_SBLKDEV_REQUESTS_BASED */
 
 
-static int _open(struct block_device *bdev, fmode_t mode)
+static int _open(struct gendisk *bdev, unsigned int mode)
 {
-	struct sblkdev_device *dev = bdev->bd_disk->private_data;
+	struct sblkdev_device *dev = bdev->private_data;
 
 	if (!dev) {
 		pr_err("Invalid disk private_data\n");
@@ -136,7 +137,7 @@ static int _open(struct block_device *bdev, fmode_t mode)
 	return 0;
 }
 
-static void _release(struct gendisk *disk, fmode_t mode)
+static void _release(struct gendisk *disk)
 {
 	struct sblkdev_device *dev = disk->private_data;
 
@@ -393,7 +394,7 @@ struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
 	blk_queue_physical_block_size(disk->queue, SECTOR_SIZE);
 	blk_queue_logical_block_size(disk->queue, SECTOR_SIZE);
 #endif
-	blk_queue_max_hw_sectors(disk->queue, BLK_DEF_MAX_SECTORS);
+	blk_queue_max_hw_sectors(disk->queue, BLK_SAFE_MAX_SECTORS);
 	blk_queue_flag_set(QUEUE_FLAG_NOMERGES, disk->queue);
 
 

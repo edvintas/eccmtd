@@ -1,6 +1,10 @@
 NAME:= eccmtd
 
-obj-m += ${NAME}.o device.o sblkdev.o
+-include ${M}/Makefile.sblkdev
+
+${NAME}-y := sblkdev.o device.o
+obj-$(CONFIG_SBLKDEV) += ${NAME}.o
+
 
 build:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
@@ -19,3 +23,6 @@ unload:
 
 format:
 	astyle --options=.astylerc -r '*.cpp,*.c,*.hpp,*.h,*.c'
+
+log:
+	dmesg

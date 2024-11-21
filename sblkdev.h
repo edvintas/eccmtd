@@ -3,4 +3,7 @@
 
 #include "device.h"
 
+static int sblkdev_init(void);
+static void sblkdev_exit(void);
+
 #endif

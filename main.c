@@ -3,7 +3,7 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/module.h>
-#include "device.h"
+#include "eccmtd.h"
 
 #ifdef CONFIG_SBLKDEV_REQUESTS_BASED
 #pragma message("Request-based scheme selected.")
@@ -144,5 +144,22 @@ static void sblkdev_exit(void)
 module_param_named(catalog, sblkdev_catalog, charp, 0644);
 MODULE_PARM_DESC(catalog, "New block devices catalog in format '<name>,<capacity sectors>;...'");
 
+static int __init eccmtd_init(void) {
+        printk(KERN_INFO "eccm loaded 12344444");
+//      sblkdev_add(0, 0, NULL, NULL);
+      sblkdev_init();
+//      dev = sblkdev_add(sblkdev_major, inx, name, capacity_value);
+        return 0;
+}
+
+static void __exit eccmtd_exit(void) {
+        printk(KERN_INFO "eccm unloaded 45677777777");
+      sblkdev_exit();
+}
+
+module_init(eccmtd_init);
+module_exit(eccmtd_exit);
+
+MODULE_DESCRIPTION("Error correction module for MTD interface");
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Sergei Shtepa");
+MODULE_AUTHOR("Edvinas Bazaras <edvintas@gmail.com>");

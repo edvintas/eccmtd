@@ -2,7 +2,7 @@ NAME:= eccmtd
 
 -include ${M}/Makefile.sblkdev
 
-${NAME}-y := sblkdev.o device.o
+${NAME}-y := main.o device.o
 obj-$(CONFIG_SBLKDEV) += ${NAME}.o
 
 

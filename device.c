@@ -24,11 +24,13 @@ static inline int process_request(struct request *rq, unsigned int *nr_bytes)
 		if ((pos + len) > dev_size)
 			len = (unsigned long)(dev_size - pos);
 
-		if (rq_data_dir(rq))
+		if (rq_data_dir(rq)) {
+			pr_info("Writing data")
 			memcpy(dev->data + pos, buf, len); /* WRITE */
-		else
+		} else {
+			pr_info("Reading data")
 			memcpy(buf, dev->data + pos, len); /* READ */
-
+		}
 		pos += len;
 		*nr_bytes += len;
 	}
@@ -132,7 +134,7 @@ static int _open(struct gendisk *bdev, unsigned int mode)
 		return -ENXIO;
 	}
 
-	pr_debug("Device was opened\n");
+	pr_info("Device was opened\n");
 
 	return 0;
 }
@@ -146,7 +148,7 @@ static void _release(struct gendisk *disk)
 		return;
 	}
 
-	pr_debug("Device was closed\n");
+	pr_info("Device was closed\n");
 }
 
 static inline int ioctl_hdio_getgeo(struct sblkdev_device *dev, unsigned long arg)
@@ -184,7 +186,7 @@ static int _ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd, uns
 {
 	struct sblkdev_device *dev = bdev->bd_disk->private_data;
 
-	pr_debug("contol command [0x%x] received\n", cmd);
+	pr_info("contol command [0x%x] received\n", cmd);
 
 	switch (cmd) {
 	case HDIO_GETGEO:

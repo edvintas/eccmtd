@@ -55,7 +55,7 @@ static char *sblkdev_catalog = "sblkdev1,2048;sblkdev2,4096";
  * Executed when the module is loaded. Parses the catalog parameter and
  * creates block devices.
  */
-static int sblkdev_init(void)
+int sblkdev_init(void)
 {
 	int ret = 0;
 	int inx = 0;
@@ -131,7 +131,7 @@ fail_unregister:
  * Executed when the module is unloaded. Remove all block devices and cleanup
  * all resources.
  */
-static void sblkdev_exit(void)
+void sblkdev_exit(void)
 {
 	struct sblkdev_device *dev;
 

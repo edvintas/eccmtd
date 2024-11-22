@@ -9,7 +9,9 @@ block modifyBit(block n, int p, bit b);                  // Function used to mod
 char modifyCharBit(char n, int p, bit b);                // Function used to modify a bit of a char to a specific value
 int multipleXor(int *indicies, int len);                 // Function used to XOR all the elements of a list together (used to locate error and determine values of parity bits)
 
-int encode(char *input, int len, char *output) {
+int encode(char *output, char *input, int len) {
+
+	pr_info("Encoding: %d", len);
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
@@ -95,10 +97,13 @@ int encode(char *input, int len, char *output) {
 
 		encoded[i] = thisBlock;
 	}
+	pr_info("Copying: %d / %d", len, ((blocks + 1) * sizeof(block)));
+	memcpy(output, encoded, (blocks + 1) * sizeof(block));
 	return 0;
 }
 
-int decode(char *input, int len, char *outputxxx) {
+int decode(char *outputBuff, char *input, int len) {
+	pr_info("Decoding: %d", len);
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
@@ -187,6 +192,7 @@ int decode(char *input, int len, char *outputxxx) {
 
 		}
 	}
+	memcpy(outputBuff, output, len);
 	return 0;
 }
 

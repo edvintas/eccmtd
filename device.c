@@ -27,10 +27,8 @@ static inline int process_request(struct request *rq, unsigned int *nr_bytes)
 		}
 
 		if(rq_data_dir(rq)) {
-			pr_info("Writing data request")
 			memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
-			pr_info("Reading data request")
 			memcpy(buf, dev->data + pos, len); /* READ */
 		}
 		pos += len;
@@ -89,18 +87,9 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 
 
 		if(bio_data_dir(bio)) {
-			pr_info("Writing data");
-			char *input;
-			char *output;
-			encode(input, 32, output);
-			memcpy(dev->data + pos, buf, len); /* WRITE */
+			encode(dev->data + pos, buf, len); /* WRITE */
 		} else {
-			pr_info("Reading data");
-			memcpy(buf, dev->data + pos, len); /* READ */
-			char *output;
-			char *input;
-			decode(input, 32, output);          // Function used to decode Hamming code
-
+			decode(buf, dev->data + pos, len); /* READ */
 		}
 		pos += len;
 	}

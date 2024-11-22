@@ -1,17 +1,14 @@
 #ifndef __HAMMING_H__
 #define __HAMMING_H__
 
+#include <linux/module.h>
+
 // Definitions
-#define block unsigned short    // 16 bits
-#define bit int                // 8 bits (only last is used)
-#define size_t unsigned int
-#define FILE char
-#define false 0
-#define true 1
-#define bool int
+typedef unsigned int block;    // 32 bits
+typedef unsigned char bit;
 
 // Function prototypes
-void decode(block input[], int len, FILE *ptr);          // Function used to decode Hamming code
-void encode(char *input, int len, FILE *ptr);
+int decode(char *input, int len, char *output);          // Function used to decode Hamming code
+int encode(char *input, int len, char *output);
 
 #endif

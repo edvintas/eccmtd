@@ -87,16 +87,19 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 			break;
 		}
 
-		block input[16];
 
 		if(bio_data_dir(bio)) {
 			pr_info("Writing data");
-			encode(0, 0, 0);
+			char *input;
+			char *output;
+			encode(input, 32, output);
 			memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
 			pr_info("Reading data");
 			memcpy(buf, dev->data + pos, len); /* READ */
-			decode(input, 16, 0);          // Function used to decode Hamming code
+			char *output;
+			char *input;
+			decode(input, 32, output);          // Function used to decode Hamming code
 
 		}
 		pos += len;

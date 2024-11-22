@@ -1,35 +1,30 @@
 #include "hamming.h"
+#include <linux/log2.h>
 
 // Function prototypes
-void decode(block input[], int len, FILE *ptr);          // Function used to decode Hamming code
-void encode(char *input, int len, FILE *ptr);            // Function used to encode plaintext
-void printBlock(block i);                                // Function used to pretty print a block
 bit getBit(block b, int i);                              // Function used to get a specific bit of a block
 bit getCharBit(char b, int i);                           // Function used to get a specific bit of a char
 block toggleBit(block b, int i);                         // Function used to toggle a specific bit of a block
 block modifyBit(block n, int p, bit b);                  // Function used to modify a bit to a specific value
 char modifyCharBit(char n, int p, bit b);                // Function used to modify a bit of a char to a specific value
 int multipleXor(int *indicies, int len);                 // Function used to XOR all the elements of a list together (used to locate error and determine values of parity bits)
-int inList(char **list, char *testString, int listLen);  // Function used to check if a test string is in a list
 
-void encode(char *input, int len, FILE *ptr) {
+int encode(char *input, int len, char *output) {
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
 
 	// Amount of bits per block used to carry the message //
-	int messageBits = 0; //FIXME: bits - log2(bits) - 1;
+	int messageBits = bits - ilog2(bits) - 1;
 
 	// Amount of blocks needed to encode message //
-	int blocks = 0; //FIXME: ceil((float) len / messageBits);
+	int blocks = len / messageBits;
 
 	// Array of encoded blocks //
 	block encoded[blocks+1];
 
 	// Loop through each block //
 	for(int i = 0; i < blocks+1; i++) {
-
-		//FIXME: printf("On Block %d:\n", i);
 
 		// Final encoded block variable //
 		block thisBlock = 0;
@@ -92,36 +87,23 @@ void encode(char *input, int len, FILE *ptr) {
 			}
 
 			// Add parity bit to final block //
-			thisBlock = 0; //FIXME: modifyBit(thisBlock, (int) pow(2, skipped-k-1) , getBit(parityBits, sizeof(block)*8-skipped+k));
+			thisBlock = modifyBit(thisBlock, (skipped-k-1) << 1, getBit(parityBits, sizeof(block)*8-skipped+k));
 		}
 
 		// Add overall parity bit (total parity of onCount) //
 		thisBlock = modifyBit(thisBlock, 0, onCount & 1);
 
-		// Output final block //
-		printBlock(thisBlock);
-		//putchar('\n');
-
-		// Add block to encoded blocks //
 		encoded[i] = thisBlock;
 	}
-
-	// Write encoded message to file //
-	//FIXME: ? fwrite(encoded, sizeof(block), blocks+1, ptr);
+	return 0;
 }
 
-void decode(block input[], int len, FILE *ptr) {
+int decode(char *input, int len, char *outputxxx) {
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
 
 	for(int b = 0; b < (len/sizeof(block)); b++) {
-
-		//FIXME: printf("On Block %d:\n", b);
-
-		// Print initial block //
-		printBlock(input[b]);
-
 		// Count of how many bits are "on" //
 		int onCount = 0;
 
@@ -144,27 +126,23 @@ void decode(block input[], int len, FILE *ptr) {
 
 			// Check for multiple errors //
 			if(!(onCount & 1 ^ getBit(input[b], 0))) {  // last bit of onCount (total parity) XOR first bit of block (parity bit)
-				//FIXME: printf("\nMore than one error detected. Aborting.\n");
+				pr_err("\nMore than one error detected. Aborting.\n");
+				return -1;
 			}
 
 			// Flip error bit //
 			else {
-				//FIXME: printf("\nDetected error at position %d, flipping bit.\n", errorLoc);
+				pr_warn("\nDetected error at position %d, flipping bit.\n", errorLoc);
 				input[b] = toggleBit(input[b], (bits-1) - errorLoc);
-
-				// Re-print block for comparison //
-				printBlock(input[b]);
 			}
 		}
-
-		//putchar('\n');
 	}
 
 	// Initialise output string //
 	char output[len];
 
 	// Amount of bits per block used to carry the message //
-	int messageBits = 0; //FIXME: bits - log2(bits) - 1;
+	int messageBits = bits - ilog2(bits) - 1;
 
 	int currentBit, currentChar;
 
@@ -197,8 +175,6 @@ void decode(block input[], int len, FILE *ptr) {
 			// Value of current bit //
 			bit thisBit = getBit(input[i], j);
 
-			//FIXME: printf("%d", thisBit);
-
 			if(i != len/sizeof(block)-1) {
 
 				// Populate final decoded character //
@@ -211,12 +187,7 @@ void decode(block input[], int len, FILE *ptr) {
 
 		}
 	}
-
-	//FIXME: printf("\nChars: %d\n", chars);
-
-	//FIXME: printf("Decoded hamming code: \"%.*s\"\n", chars, output);
-
-	//FIXME: ? fwrite(output, 1, chars, ptr);
+	return 0;
 }
 
 int multipleXor(int *indicies, int len) {
@@ -236,47 +207,13 @@ char modifyCharBit(char n, int p, bit b) {
 }
 
 bit getBit(block b, int i) {
-	return 0; //FIXME: (b << i) & (int) pow(2, (sizeof(block)*8-1));
+	return (b << i) & ((sizeof(block)*8-1) << 1);
 }
 
 bit getCharBit(char b, int i) {
-	return 0; //FIXME: (b << i) & (int) pow(2, (sizeof(char)*8-1));
+	return (b << i) & ((sizeof(char)*8-1) << 1);
 }
 
 block toggleBit(block b, int i) {
 	return b ^ (1 << i);
-}
-
-int inList(char **list, char *testString, int listLen) {
-	for(int i = 0; i < listLen; i++) {
-		//FIXME: if (strcmp(list[i], testString) == 0)
-		{
-			return i;
-		}
-	}
-	return 0;
-}
-
-void printBlock(block i) {
-	size_t size = sizeof(block) * sizeof(char) * 8;
-	size_t current_bit = size;
-
-	char * str = 0; //FIXME: malloc(size + 1);
-	if(!str) {
-		return;
-	}
-	str[size] = 0;
-
-	unsigned u = *(unsigned *)&i;
-	for(; current_bit--; u >>= 1) {
-		str[current_bit] = u & 1 ? '1' : '0';
-	}
-
-	for(size_t i = 0; i < size; i++) {
-		//putchar(str[i]);
-		//putchar(' ');
-		if(i % 4 == 3) {
-			//putchar('\n');
-		}
-	}
 }

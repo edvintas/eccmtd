@@ -2,5 +2,6 @@
 #define __ECCMTD_H__
 
 #include "device.h"
+#include <linux/mtd/mtd.h>
 
 #endif

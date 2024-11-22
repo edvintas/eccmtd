@@ -25,10 +25,10 @@ static inline int process_request(struct request *rq, unsigned int *nr_bytes)
 			len = (unsigned long)(dev_size - pos);
 
 		if (rq_data_dir(rq)) {
-			pr_info("Writing data")
+			pr_info("Writing data request")
 			memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
-			pr_info("Reading data")
+			pr_info("Reading data request")
 			memcpy(buf, dev->data + pos, len); /* READ */
 		}
 		pos += len;
@@ -84,11 +84,13 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 			break;
 		}
 
-		if (bio_data_dir(bio))
+		if (bio_data_dir(bio)) {
+			pr_info("Writing data");
 			memcpy(dev->data + pos, buf, len); /* WRITE */
-		else
+		} else {
+			pr_info("Reading data");
 			memcpy(buf, dev->data + pos, len); /* READ */
-
+		}
 		pos += len;
 	}
 	bio_end_io_acct(bio, start_time);

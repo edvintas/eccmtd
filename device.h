@@ -18,5 +18,5 @@ struct sblkdev_device {
 };
 
 struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
-				  sector_t capacity);
+								   sector_t capacity);
 void sblkdev_remove(struct sblkdev_device *dev);

@@ -22,10 +22,11 @@ static inline int process_request(struct request *rq, unsigned int *nr_bytes)
 		unsigned long len = bvec.bv_len;
 		void *buf = page_address(bvec.bv_page) + bvec.bv_offset;
 
-		if ((pos + len) > dev_size)
+		if((pos + len) > dev_size) {
 			len = (unsigned long)(dev_size - pos);
+		}
 
-		if (rq_data_dir(rq)) {
+		if(rq_data_dir(rq)) {
 			pr_info("Writing data request")
 			memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
@@ -50,8 +51,9 @@ static blk_status_t _queue_rq(struct blk_mq_hw_ctx *hctx, const struct blk_mq_qu
 
 	blk_mq_start_request(rq);
 
-	if (process_request(rq, &nr_bytes))
+	if(process_request(rq, &nr_bytes)) {
 		status = BLK_STS_IOERR;
+	}
 
 	pr_debug("request %llu:%d processed\n", blk_rq_pos(rq), nr_bytes);
 
@@ -79,22 +81,22 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 		unsigned int len = bvec.bv_len;
 		void *buf = page_address(bvec.bv_page) + bvec.bv_offset;
 
-		if ((pos + len) > dev_size) {
+		if((pos + len) > dev_size) {
 			/* len = (unsigned long)(dev_size - pos);*/
 			bio->bi_status = BLK_STS_IOERR;
 			break;
 		}
 
-		      block input[16];
+		block input[16];
 
-		if (bio_data_dir(bio)) {
+		if(bio_data_dir(bio)) {
 			pr_info("Writing data");
-        		encode(0, 0, 0);
+			encode(0, 0, 0);
 			memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
 			pr_info("Reading data");
 			memcpy(buf, dev->data + pos, len); /* READ */
-		        decode(input, 16, 0);          // Function used to decode Hamming code
+			decode(input, 16, 0);          // Function used to decode Hamming code
 
 		}
 		pos += len;
@@ -137,7 +139,7 @@ static int _open(struct gendisk *bdev, unsigned int mode)
 {
 	struct sblkdev_device *dev = bdev->private_data;
 
-	if (!dev) {
+	if(!dev) {
 		pr_err("Invalid disk private_data\n");
 		return -ENXIO;
 	}
@@ -151,7 +153,7 @@ static void _release(struct gendisk *disk)
 {
 	struct sblkdev_device *dev = disk->private_data;
 
-	if (!dev) {
+	if(!dev) {
 		pr_err("Invalid disk private_data\n");
 		return;
 	}
@@ -164,16 +166,16 @@ static inline int ioctl_hdio_getgeo(struct sblkdev_device *dev, unsigned long ar
 	struct hd_geometry geo = {0};
 
 	geo.start = 0;
-	if (dev->capacity > 63) {
+	if(dev->capacity > 63) {
 		sector_t quotient;
 
 		geo.sectors = 63;
 		quotient = (dev->capacity + (63 - 1)) / 63;
 
-		if (quotient > 255) {
+		if(quotient > 255) {
 			geo.heads = 255;
 			geo.cylinders = (unsigned short)
-				((quotient + (255 - 1)) / 255);
+							((quotient + (255 - 1)) / 255);
 		} else {
 			geo.heads = (unsigned char)quotient;
 			geo.cylinders = 1;
@@ -184,8 +186,9 @@ static inline int ioctl_hdio_getgeo(struct sblkdev_device *dev, unsigned long ar
 		geo.heads = 1;
 	}
 
-	if (copy_to_user((void *)arg, &geo, sizeof(geo)))
+	if(copy_to_user((void *)arg, &geo, sizeof(geo))) {
 		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -196,7 +199,7 @@ static int _ioctl(struct block_device *bdev, fmode_t mode, unsigned int cmd, uns
 
 	pr_info("contol command [0x%x] received\n", cmd);
 
-	switch (cmd) {
+	switch(cmd) {
 	case HDIO_GETGEO:
 		return ioctl_hdio_getgeo(dev, arg);
 	case CDROM_GET_CAPABILITY:
@@ -274,13 +277,13 @@ static inline int init_tag_set(struct blk_mq_tag_set *set, void *data)
 
 #ifndef HAVE_BLK_MQ_ALLOC_DISK
 static inline struct gendisk *blk_mq_alloc_disk(struct blk_mq_tag_set *set,
-						void *queuedata)
+		void *queuedata)
 {
 	struct gendisk *disk;
 	struct request_queue *queue;
 
 	queue = blk_mq_init_queue(set);
-	if (IS_ERR(queue)) {
+	if(IS_ERR(queue)) {
 		pr_err("Failed to allocate queue\n");
 		return ERR_PTR(PTR_ERR(queue));
 	}
@@ -289,10 +292,12 @@ static inline struct gendisk *blk_mq_alloc_disk(struct blk_mq_tag_set *set,
 	blk_queue_bounce_limit(queue, BLK_BOUNCE_HIGH);
 
 	disk = alloc_disk(1);
-	if (!disk)
+	if(!disk) {
 		pr_err("Failed to allocate disk\n");
-	else
+	}
+	else {
 		disk->queue = queue;
+	}
 
 	return disk;
 }
@@ -305,11 +310,12 @@ static inline struct gendisk *blk_alloc_disk(int node)
 	struct gendisk *disk;
 
 	q = blk_alloc_queue(node);
-	if (!q)
+	if(!q) {
 		return NULL;
+	}
 
 	disk = __alloc_disk_node(0, node);
-	if (!disk) {
+	if(!disk) {
 		blk_cleanup_queue(q);
 		return NULL;
 	}
@@ -323,7 +329,7 @@ static inline struct gendisk *blk_alloc_disk(int node)
  * sblkdev_add() - Add simple block device
  */
 struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
-				  sector_t capacity)
+								   sector_t capacity)
 {
 	struct sblkdev_device *dev = NULL;
 	int ret = 0;
@@ -332,7 +338,7 @@ struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
 	pr_info("add device '%s' capacity %llu sectors\n", name, capacity);
 
 	dev = kzalloc(sizeof(struct sblkdev_device), GFP_KERNEL);
-	if (!dev) {
+	if(!dev) {
 		ret = -ENOMEM;
 		goto fail;
 	}
@@ -340,25 +346,25 @@ struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
 	INIT_LIST_HEAD(&dev->link);
 	dev->capacity = capacity;
 	dev->data = __vmalloc(capacity << SECTOR_SHIFT, GFP_NOIO | __GFP_ZERO);
-	if (!dev->data) {
+	if(!dev->data) {
 		ret = -ENOMEM;
 		goto fail_kfree;
 	}
 
 #ifdef CONFIG_SBLKDEV_REQUESTS_BASED
 	ret = init_tag_set(&dev->tag_set, dev);
-	if (ret) {
+	if(ret) {
 		pr_err("Failed to allocate tag set\n");
 		goto fail_vfree;
 	}
 
 	disk = blk_mq_alloc_disk(&dev->tag_set, dev);
-	if (unlikely(!disk)) {
+	if(unlikely(!disk)) {
 		ret = -ENOMEM;
 		pr_err("Failed to allocate disk\n");
 		goto fail_free_tag_set;
 	}
-	if (IS_ERR(disk)) {
+	if(IS_ERR(disk)) {
 		ret = PTR_ERR(disk);
 		pr_err("Failed to allocate disk\n");
 		goto fail_free_tag_set;
@@ -366,7 +372,7 @@ struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
 
 #else
 	disk = blk_alloc_disk(NUMA_NO_NODE);
-	if (!disk) {
+	if(!disk) {
 		pr_err("Failed to allocate disk\n");
 		ret = -ENOMEM;
 		goto fail_vfree;
@@ -410,7 +416,7 @@ struct sblkdev_device *sblkdev_add(int major, int minor, char *name,
 
 #ifdef HAVE_ADD_DISK_RESULT
 	ret = add_disk(disk);
-	if (ret) {
+	if(ret) {
 		pr_err("Failed to add disk '%s'\n", disk->disk_name);
 		goto fail_put_disk;
 	}

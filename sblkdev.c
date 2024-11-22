@@ -65,45 +65,48 @@ static int sblkdev_init(void)
 	size_t length;
 
 	sblkdev_major = register_blkdev(sblkdev_major, KBUILD_MODNAME);
-	if (sblkdev_major <= 0) {
+	if(sblkdev_major <= 0) {
 		pr_info("Unable to get major number\n");
 		return -EBUSY;
 	}
 
 	length = strlen(sblkdev_catalog);
-	if ((length < 1) || (length > PAGE_SIZE)) {
+	if((length < 1) || (length > PAGE_SIZE)) {
 		pr_info("Invalid module parameter 'catalog'\n");
 		ret = -EINVAL;
 		goto fail_unregister;
 	}
 
 	catalog = kzalloc(length + 1, GFP_KERNEL);
-	if (!catalog) {
+	if(!catalog) {
 		ret = -ENOMEM;
 		goto fail_unregister;
 	}
 	strcpy(catalog, sblkdev_catalog);
 
 	next_token = catalog;
-	while ((token = strsep(&next_token, ";"))) {
+	while((token = strsep(&next_token, ";"))) {
 		struct sblkdev_device *dev;
 		char *name;
 		char *capacity;
 		sector_t capacity_value;
 
 		name = strsep(&token, ",");
-		if (!name)
+		if(!name) {
 			continue;
+		}
 		capacity = strsep(&token, ",");
-		if (!capacity)
+		if(!capacity) {
 			continue;
+		}
 
 		ret = kstrtoull(capacity, 10, &capacity_value);
-		if (ret)
+		if(ret) {
 			break;
+		}
 
 		dev = sblkdev_add(sblkdev_major, inx, name, capacity_value);
-		if (IS_ERR(dev)) {
+		if(IS_ERR(dev)) {
 			ret = PTR_ERR(dev);
 			break;
 		}
@@ -113,8 +116,9 @@ static int sblkdev_init(void)
 	}
 	kfree(catalog);
 
-	if (ret == 0)
+	if(ret == 0) {
 		return 0;
+	}
 
 fail_unregister:
 	unregister_blkdev(sblkdev_major, KBUILD_MODNAME);
@@ -131,14 +135,15 @@ static void sblkdev_exit(void)
 {
 	struct sblkdev_device *dev;
 
-	while ((dev = list_first_entry_or_null(&sblkdev_device_list,
-					       struct sblkdev_device, link))) {
+	while((dev = list_first_entry_or_null(&sblkdev_device_list,
+										  struct sblkdev_device, link))) {
 		list_del(&dev->link);
 		sblkdev_remove(dev);
 	}
 
-	if (sblkdev_major > 0)
+	if(sblkdev_major > 0) {
 		unregister_blkdev(sblkdev_major, KBUILD_MODNAME);
+	}
 }
 
 module_param_named(catalog, sblkdev_catalog, charp, 0644);

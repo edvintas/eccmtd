@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
-#include <string.h>
-
-// Definitions
-#define block unsigned short    // 16 bits
-#define bit bool                // 8 bits (only last is used)
+#include "hamming.h"
 
 // Function prototypes
 void decode(block input[], int len, FILE *ptr);          // Function used to decode Hamming code
@@ -20,218 +12,16 @@ char modifyCharBit(char n, int p, bit b);                // Function used to mod
 int multipleXor(int *indicies, int len);                 // Function used to XOR all the elements of a list together (used to locate error and determine values of parity bits)
 int inList(char **list, char *testString, int listLen);  // Function used to check if a test string is in a list 
 
-void usage(char *path) {
-    printf("\nUsage: %s [COMMANDS]\n\n\tencode \tEncodes plaintext to hamming code\n\t\t-i \"FILENAME\" \tReads plaintext from file FILENAME (default is \"in.txt\")\n\t\t-o \"TEXT\" \tTEXT is read as plaintext input (file input is default)\n\t\t-o \"FILENAME\" \tOutputs hamming code to file FILENAME (default is \"out.hm\")\n\n\tdecode \tDecodes hamming code and prints original plaintext\n\t\t-i \"FILENAME\" \tReads hamming code from file FILENAME (default is \"out.hm\")\n\t\t-o \"FILENAME\" \tOutputs hamming code to file FILENAME (default is \"out.txt\")\n\n", path);
-}
-
-int main (int argc, char **argv) {
-
-    // Path of file //
-    char *path = argv[0];
-
-    // If no arguements given //
-    if (argc == 1) {
-        usage(path);
-        return 1;
-    }
-    
-    // Command //
-    char *command = argv[1];
-
-    // Check which command was given //
-    if (strcmp(command, "decode") == 0) {
-        
-        // Default input filename //
-        char rfilename[32] = "out.hm";
-
-        // Default output filename //
-        char wfilename[32] = "out.txt";
-
-        // Check index of -i arguement //
-        int inputIndex = inList(argv, "-i", argc);
-
-        // If the an arguement is -i (input file) //
-        if (inputIndex) {
-
-            // Change read filename to given file //
-            strcpy(rfilename, argv[inputIndex+1]);
-        }
-
-        // Check index of -o arguement //
-        int outputIndex = inList(argv, "-o", argc);
-
-        // If the an arguement is -o (output file) //
-        if (outputIndex) {
-
-            // Change read filename to given file //
-            strcpy(wfilename, argv[outputIndex+1]);
-        }
-
-        FILE *rptr;
-        FILE *wptr;
-
-        // Check if input file exists and open file //
-        if (!(rptr = fopen(rfilename,"r"))) {
-            printf("File \"%s\" cannot be opened (does the file exist?). Aborting.\n", rfilename);
-            return 1;
-        }
-
-        // Check if output file exists and open file //
-        if (!(wptr = fopen(wfilename,"wb"))) {
-            printf("File \"%s\" cannot be opened (does the file exist?). Aborting.\n", wfilename);
-            return 1;
-        }
-
-        printf("Decoding file \"%s\" to \"%s\"\n", rfilename, wfilename);
-
-        // Seek to end of file //
-        fseek(rptr, 0L, SEEK_END);
-
-        // Determine length of the file in bytes //
-        int sz = ftell(rptr);
-
-        // Go back to start of file //
-        rewind(rptr);
-
-        // Initialise hamming code input variable //
-        block input[sz];
-
-        // Read hamming code from file to variable //
-        fread(input, sizeof(block), sz/sizeof(block), rptr);    
-
-
-        decode(input, sz, wptr);
-
-        printf("\nDecoded hamming code saved to file \"%s\"\n", wfilename);
-    }
-
-    if (strcmp(command, "encode") == 0) {
-        
-        // Default output filename //
-        char wfilename[32] = "out.hm";
-        
-        // Input filename //
-        char rfilename[32] = "in.txt";
-
-        // Whether the input is a file or not //
-        bool fileInput = true;
-
-        // Initialise file pointer variables //
-        FILE *rptr;
-        FILE *wptr;
-
-        // initialise input variable //
-        unsigned char *input;
-
-        // initialise input size variable //
-        int sz;
-
-
-        // Check index of -o arguement //
-        int outputIndex = inList(argv, "-o", argc);
-
-        // If the an arguement is -o (output file) //
-        if (outputIndex) {
-
-            // Change write filename to given file //
-            strcpy(wfilename, argv[outputIndex+1]);
-        }
-
-        // Check index of -i arguement //
-        int inputIndex = inList(argv, "-i", argc);
-
-        // If the an arguement is -i (input file) //
-        if (inputIndex) {
-
-            // Abort if both -t and -i options are present //
-            if (inList(argv, "-t", argc)) {
-                printf("-i (input file) and -t (text input) options cannot be used in conjunction. Aborting");
-                return 1;
-            }
-
-            // Change read filename to given file //
-            strcpy(rfilename, argv[inputIndex+1]);
-
-            // Check if input file exists and open file //
-            if (!(rptr = fopen(rfilename,"r"))) {
-                printf("File \"%s\" cannot be opened (does the file exist?). Aborting.\n", rfilename);
-                return 1;
-            }
-
-            printf("Encoding file \"%s\" to \"%s\"\n", rfilename, wfilename);
-        }
-
-        // Check index of -t arguement //
-        int textIndex = inList(argv, "-t", argc);
-
-        // If the an arguement is -t (text input) //
-        if (textIndex) {
-
-            fileInput = false;
-            
-            // Variable used to store current char when looping //
-            char currentChar = argv[textIndex+1][0];
-
-            // Variable used to store current char index when looping //
-            int index = 0;
-
-            // Loop to find length of input text (stop when null char encountered) //
-            while (currentChar != '\0') {
-                index++;
-                currentChar = argv[textIndex+1][index];
-            }
-
-            // Make size equal to last index //
-            sz = index;
-
-            // Allocate sz+1 bytes of memory to store input //
-            input = malloc(sz+1);
-
-            // Copy text input to input variable //
-            strcpy(input, argv[textIndex+1]);
-
-            printf("Encoding \"%s\" to \"%s\"\n", input, wfilename);
-        }
-
-        if (fileInput) {
-            // Seek to end of file //
-            fseek(rptr, 0L, SEEK_END);
-
-            // Determine length of the file in bytes //
-            sz = ftell(rptr);
-
-            // Go back to start of file //
-            rewind(rptr);
-
-            // Initialise hamming code input variable //
-            input = malloc(sz+1);
-
-            // Read hamming code from file to variable //
-            fread(input, 1, sz, rptr);
-        }
-
-        // Open write file //
-        wptr = fopen(wfilename,"wb");
-
-
-        encode(input, sz*8, wptr);
-
-        printf("\nEncoded hamming code saved to file \"%s\"\n", wfilename);
-    }
-    
-    return 0;
-}
-
 void encode(char *input, int len, FILE *ptr) {
 
     // Amount of bits in a block //
     int bits = sizeof(block) * 8;
 
     // Amount of bits per block used to carry the message //
-    int messageBits = bits - log2(bits) - 1;
+    int messageBits = 0; //FIXME: bits - log2(bits) - 1;
 
     // Amount of blocks needed to encode message //
-    int blocks = ceil((float) len / messageBits);
+    int blocks = 0; //FIXME: ceil((float) len / messageBits);
 
     // Array of encoded blocks //
     block encoded[blocks+1];
@@ -239,7 +29,7 @@ void encode(char *input, int len, FILE *ptr) {
     // Loop through each block //
     for (int i = 0; i < blocks+1; i++) {
 
-        printf("On Block %d:\n", i);
+        //FIXME: printf("On Block %d:\n", i);
 
         // Final encoded block variable //
         block thisBlock = 0;
@@ -302,7 +92,7 @@ void encode(char *input, int len, FILE *ptr) {
             }
 
             // Add parity bit to final block //
-            thisBlock = modifyBit(thisBlock, (int) pow(2, skipped-k-1) , getBit(parityBits, sizeof(block)*8-skipped+k));
+            thisBlock = 0; //FIXME: modifyBit(thisBlock, (int) pow(2, skipped-k-1) , getBit(parityBits, sizeof(block)*8-skipped+k));
         }
 
         // Add overall parity bit (total parity of onCount) //
@@ -310,14 +100,14 @@ void encode(char *input, int len, FILE *ptr) {
 
         // Output final block //
         printBlock(thisBlock);
-        putchar('\n');
+        //putchar('\n');
 
         // Add block to encoded blocks //
         encoded[i] = thisBlock;
     }
     
     // Write encoded message to file //
-    fwrite(encoded, sizeof(block), blocks+1, ptr);
+    //FIXME: ? fwrite(encoded, sizeof(block), blocks+1, ptr);
 }
 
 void decode(block input[], int len, FILE *ptr) {
@@ -327,7 +117,7 @@ void decode(block input[], int len, FILE *ptr) {
 
     for (int b = 0; b < (len/sizeof(block)); b++) {
 
-        printf("On Block %d:\n", b);
+        //FIXME: printf("On Block %d:\n", b);
 
         // Print initial block //
         printBlock(input[b]);
@@ -354,13 +144,12 @@ void decode(block input[], int len, FILE *ptr) {
             
             // Check for multiple errors //
             if (!(onCount & 1 ^ getBit(input[b], 0))) { // last bit of onCount (total parity) XOR first bit of block (parity bit)
-                printf("\nMore than one error detected. Aborting.\n");
-                exit(1);
+                //FIXME: printf("\nMore than one error detected. Aborting.\n");
             }
             
             // Flip error bit //
             else {
-                printf("\nDetected error at position %d, flipping bit.\n", errorLoc);
+                //FIXME: printf("\nDetected error at position %d, flipping bit.\n", errorLoc);
                 input[b] = toggleBit(input[b], (bits-1) - errorLoc);
                 
                 // Re-print block for comparison //
@@ -368,14 +157,14 @@ void decode(block input[], int len, FILE *ptr) {
             }
         }
         
-        putchar('\n');
+        //putchar('\n');
     }
 
     // Initialise output string //
     char output[len];
 
     // Amount of bits per block used to carry the message //
-    int messageBits = bits - log2(bits) - 1;
+    int messageBits = 0; //FIXME: bits - log2(bits) - 1;
 
     int currentBit, currentChar;
 
@@ -402,13 +191,13 @@ void decode(block input[], int len, FILE *ptr) {
             currentChar = currentBit/(sizeof(char)*8); // int division
 
             if (currentBit-currentChar*8 == 0 && currentBit != 0) {
-                putchar(' ');
+                //putchar(' ');
             }
 
             // Value of current bit //
             bit thisBit = getBit(input[i], j);
 
-            printf("%d", thisBit);
+            //FIXME: printf("%d", thisBit);
 
             if (i != len/sizeof(block)-1) {
 	        
@@ -423,11 +212,11 @@ void decode(block input[], int len, FILE *ptr) {
         }
     }
 
-    printf("\nChars: %d\n", chars);
+    //FIXME: printf("\nChars: %d\n", chars);
     
-    printf("Decoded hamming code: \"%.*s\"\n", chars, output);
+    //FIXME: printf("Decoded hamming code: \"%.*s\"\n", chars, output);
 
-    fwrite(output, 1, chars, ptr);    
+    //FIXME: ? fwrite(output, 1, chars, ptr);    
 }
 
 int multipleXor(int *indicies, int len) {
@@ -447,11 +236,11 @@ char modifyCharBit(char n, int p, bit b) {
 }
 
 bit getBit(block b, int i) {
-    return (b << i) & (int) pow(2, (sizeof(block)*8-1));
+    return 0; //FIXME: (b << i) & (int) pow(2, (sizeof(block)*8-1));
 }
 
 bit getCharBit(char b, int i) {
-    return (b << i) & (int) pow(2, (sizeof(char)*8-1));
+    return 0; //FIXME: (b << i) & (int) pow(2, (sizeof(char)*8-1));
 }
 
 block toggleBit(block b, int i) {
@@ -460,7 +249,8 @@ block toggleBit(block b, int i) {
 
 int inList(char **list, char *testString, int listLen) {
     for (int i = 0; i < listLen; i++) {
-        if (strcmp(list[i], testString) == 0) {
+        //FIXME: if (strcmp(list[i], testString) == 0)
+	{
             return i;
         }
     }
@@ -471,7 +261,7 @@ void printBlock(block i) {
     size_t size = sizeof(block) * sizeof(char) * 8;
     size_t current_bit = size;
 
-    char * str = malloc(size + 1);
+    char * str = 0; //FIXME: malloc(size + 1);
     if(!str) return;
     str[size] = 0;
 
@@ -480,10 +270,10 @@ void printBlock(block i) {
         str[current_bit] = u & 1 ? '1' : '0';
 
     for (size_t i = 0; i < size; i++) {
-        putchar(str[i]);
-        putchar(' ');
+        //putchar(str[i]);
+        //putchar(' ');
         if (i % 4 == 3) {
-            putchar('\n');
+            //putchar('\n');
         }
     }
 }

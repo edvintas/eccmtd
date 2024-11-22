@@ -171,6 +171,7 @@ static int __init eccmtd_init(void) {
         printk(KERN_INFO "eccm loaded 12344444");
 //      sblkdev_add(0, 0, NULL, NULL);
       sblkdev_init();
+
 //      dev = sblkdev_add(sblkdev_major, inx, name, capacity_value);
         return 0;
 }

@@ -2,7 +2,7 @@ NAME:= eccmtd
 
 -include ${M}/Makefile.sblkdev
 
-${NAME}-y := main.o device.o
+${NAME}-y := main.o device.o hamming.o
 obj-$(CONFIG_SBLKDEV) += ${NAME}.o
 
 

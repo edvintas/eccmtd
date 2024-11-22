@@ -3,5 +3,6 @@
 
 #include "device.h"
 #include <linux/mtd/mtd.h>
+#include "hamming.h"
 
 #endif

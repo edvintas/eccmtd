@@ -4,6 +4,7 @@
 #include <linux/hdreg.h> /* for HDIO_GETGEO */
 #include <linux/cdrom.h> /* for CDROM_GET_CAPABILITY */
 #include "device.h"
+#include "hamming.h"
 
 #ifdef CONFIG_SBLKDEV_REQUESTS_BASED
 
@@ -84,12 +85,17 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 			break;
 		}
 
+		      block input[16];
+
 		if (bio_data_dir(bio)) {
 			pr_info("Writing data");
+        		encode(0, 0, 0);
 			memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
 			pr_info("Reading data");
 			memcpy(buf, dev->data + pos, len); /* READ */
+		        decode(input, 16, 0);          // Function used to decode Hamming code
+
 		}
 		pos += len;
 	}

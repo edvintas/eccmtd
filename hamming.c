@@ -1,5 +1,15 @@
 #include "hamming.h"
+
+#ifdef __KERNEL__
 #include <linux/log2.h>
+#else
+#define pr_info printf
+#define pr_err printf
+#define pr_warn printf
+#define ilog2 log2
+
+#include <math.h>
+#endif
 
 // Function prototypes
 bit getBit(block b, int i);                              // Function used to get a specific bit of a block
@@ -9,9 +19,7 @@ block modifyBit(block n, int p, bit b);                  // Function used to mod
 char modifyCharBit(char n, int p, bit b);                // Function used to modify a bit of a char to a specific value
 int multipleXor(int *indicies, int len);                 // Function used to XOR all the elements of a list together (used to locate error and determine values of parity bits)
 
-int encode(char *output, char *input, int len) {
-
-	pr_info("Encoding: %d", len);
+int encode(block output[], char *input, int len) {
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
@@ -20,7 +28,9 @@ int encode(char *output, char *input, int len) {
 	int messageBits = bits - ilog2(bits) - 1;
 
 	// Amount of blocks needed to encode message //
-	int blocks = len / messageBits;
+	int blocks = (len * sizeof(input[0]) * 8) / messageBits;
+
+	pr_info("Encoding: len = %d, bits = %d, mb = %d, blocks = %d", len, bits, messageBits, blocks);
 
 	// Array of encoded blocks //
 	block encoded[blocks+1];
@@ -102,7 +112,7 @@ int encode(char *output, char *input, int len) {
 	return 0;
 }
 
-int decode(char *outputBuff, char *input, int len) {
+int decode(char *outputBuff, block input[], int len) {
 	pr_info("Decoding: %d", len);
 
 	// Amount of bits in a block //

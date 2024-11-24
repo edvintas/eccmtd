@@ -5,6 +5,8 @@ NAME:= eccmtd
 ${NAME}-y := main.o device.o hamming.o sblkdev.o
 obj-$(CONFIG_SBLKDEV) += ${NAME}.o
 
+all: build sign
+	@echo All done.
 
 build:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
@@ -26,3 +28,13 @@ format:
 
 log:
 	dmesg
+
+create-mtdram:
+	modprobe mtdram total_size=32768
+	cat /proc/mtd
+
+build-hamming-test:
+	gcc test_hamming.c hamming.c -lm -o test_hamming
+
+test-hamming:
+	./test_hamming

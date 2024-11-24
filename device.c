@@ -3,6 +3,8 @@
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 #include <linux/hdreg.h> /* for HDIO_GETGEO */
 #include <linux/cdrom.h> /* for CDROM_GET_CAPABILITY */
+#include <linux/mtd/mtd.h>
+
 #include "device.h"
 #include "hamming.h"
 
@@ -87,9 +89,13 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 
 
 		if(bio_data_dir(bio)) {
-			encode(dev->data + pos, buf, len); /* WRITE */
+			//encode(dev->data + pos, buf, len); /* WRITE */
+			//size_t retlen;
+			//mtd_write(0, 0, 1, &retlen, dev->data + pos);
+			//int 	mtd_write (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf)
 		} else {
-			decode(buf, dev->data + pos, len); /* READ */
+			//int 	mtd_read (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf)
+			//decode(buf, dev->data + pos, len); /* READ */
 		}
 		pos += len;
 	}

@@ -9,6 +9,6 @@ typedef unsigned char bit;
 
 // Function prototypes
 int decode(char *output, block input[], int len);          // Function used to decode Hamming code
-int encode(block output[], char *input, int len);
+int encode(block output[], char *input, int len, int *retlen);
 
 #endif

@@ -6,9 +6,10 @@
 int main() {
 	printf("Testing hamming encode/decode\n");
 	char *input = "abcdefg";
-	block *output;
-///FIXME: segfault	encode(output, input, strlen(input));
-	
+	block output[128];
+	int retlen;
+	encode(output, input, strlen(input), &retlen);
+	printf("rlen = %d\n", retlen);
 	printf("Test completed\n");
 
 	return 0;

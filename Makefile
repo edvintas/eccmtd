@@ -38,3 +38,6 @@ build-hamming-test:
 
 test-hamming:
 	./test_hamming
+
+test: build-hamming-test test-hamming
+	@echo Tests done.

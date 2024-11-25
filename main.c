@@ -52,14 +52,16 @@ struct mtd_info *get_mtd_info(char *name) {
 int ecc_mtd_read(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, char *buf) {
 	block *obuf = kzalloc(len, GFP_KERNEL);
 	int ret = mtd_read(mtd, pos, len, retlen, (char*)obuf);
-	decode(buf, obuf, len);
+	int rlen;
+	decode(buf, obuf, len, rlen);
 	kfree(obuf);
 	return ret;
 }
 
 int ecc_mtd_write(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, char *buf) {
 	block *ibuf = kzalloc(len, GFP_KERNEL);
-	encode(ibuf, buf, len);
+	int rlen;
+	encode(ibuf, buf, len, &rlen);
 //	memcpy(ibuf, buf, len);
 	int ret = mtd_write(mtd, pos, len * sizeof(block), retlen, (char *)ibuf);
 	kfree(ibuf);

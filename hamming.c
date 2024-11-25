@@ -1,5 +1,6 @@
 #include "hamming.h"
 
+
 #ifdef __KERNEL__
 #include <linux/log2.h>
 #else
@@ -9,7 +10,16 @@
 #define ilog2 log2
 
 #include <math.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #endif
+
+int pow2(int x) {
+	if (!x) {
+		return 1;
+	}
+	return 2 << (x - 1);
+}
 
 // Function prototypes
 bit getBit(block b, int i);                              // Function used to get a specific bit of a block
@@ -19,7 +29,7 @@ block modifyBit(block n, int p, bit b);                  // Function used to mod
 char modifyCharBit(char n, int p, bit b);                // Function used to modify a bit of a char to a specific value
 int multipleXor(int *indicies, int len);                 // Function used to XOR all the elements of a list together (used to locate error and determine values of parity bits)
 
-int encode(block output[], char *input, int len, int *retlen) {
+int encode(block *output, char *input, int len, int *retlen) {
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
@@ -29,6 +39,8 @@ int encode(block output[], char *input, int len, int *retlen) {
 
 	// Amount of blocks needed to encode message //
 	int blocks = len / messageBits;
+
+	blocks += !!(len % messageBits);
 
 	pr_info("Encoding: len = %d, bits = %d, mb = %d, blocks = %d\n", len, bits, messageBits, blocks);
 
@@ -61,7 +73,8 @@ int encode(block output[], char *input, int len, int *retlen) {
 
 			bit thisBit;
 
-			if(i != blocks) {
+			if(i != blocks)
+			{
 
 				// Current overall bit number //
 				int currentBit = i*messageBits + (j-skipped);
@@ -71,9 +84,7 @@ int encode(block output[], char *input, int len, int *retlen) {
 
 				// Value of current bit //
 				thisBit = currentBit < len*sizeof(char)*8 ? getCharBit(input[currentChar], currentBit-currentChar*8) : 0;
-			}
-
-			else {
+			} else {
 				thisBit = getBit(len/8, j-skipped+(sizeof(block)*8-messageBits));
 			}
 
@@ -82,7 +93,6 @@ int encode(block output[], char *input, int len, int *retlen) {
 				onList[onCount] = j;
 				onCount++;
 			}
-
 			// Populate final message block //
 			thisBlock = modifyBit(thisBlock, j, thisBit);
 		}
@@ -97,9 +107,11 @@ int encode(block output[], char *input, int len, int *retlen) {
 			if(getBit(parityBits, sizeof(block)*8-skipped+k)) {
 				onCount++;
 			}
+			//pr_info("BL[%d] = %X\n", k, thisBlock);
 
 			// Add parity bit to final block //
-			thisBlock = modifyBit(thisBlock, (skipped-k-1) << 1, getBit(parityBits, sizeof(block)*8-skipped+k));
+			//FIXME: thisBlock = modifyBit(thisBlock, (skipped-k-1) << 1, getBit(parityBits, sizeof(block)*8-skipped+k));
+			thisBlock = modifyBit(thisBlock, pow2(skipped-k-1), getBit(parityBits, sizeof(block)*8-skipped+k));
 		}
 
 		// Add overall parity bit (total parity of onCount) //
@@ -108,18 +120,21 @@ int encode(block output[], char *input, int len, int *retlen) {
 		encoded[i] = thisBlock;
 	}
 	pr_info("Copying: len = %d, bytes = %d\n", len, ((blocks + 1) * sizeof(block)));
-	*retlen = (blocks + 1) * sizeof(block) * len;
-	memcpy(output, encoded, *retlen);
+	pr_info("BL[0] = %X\n", encoded[0]);
+	int buffSize = (blocks + 1) * sizeof(block);
+	*retlen = blocks + 1;
+	memcpy(output, encoded, buffSize);
 	return 0;
 }
 
-int decode(char *outputBuff, block input[], int len) {
-	pr_info("Decoding: %d", len);
+int decode(char *output, block input[], int len, int *retlen) {
 
 	// Amount of bits in a block //
 	int bits = sizeof(block) * 8;
+	pr_info("Decoding: len=%d, bits=%d\n", len, bits);
 
-	for(int b = 0; b < (len/sizeof(block)); b++) {
+	for(int b = 0; b < len; b++) {
+
 		// Count of how many bits are "on" //
 		int onCount = 0;
 
@@ -154,9 +169,6 @@ int decode(char *outputBuff, block input[], int len) {
 		}
 	}
 
-	// Initialise output string //
-	char output[len];
-
 	// Amount of bits per block used to carry the message //
 	int messageBits = bits - ilog2(bits) - 1;
 
@@ -164,7 +176,7 @@ int decode(char *outputBuff, block input[], int len) {
 
 	int chars = 0;
 
-	for(int i = 0; i < len/sizeof(block); i++) {
+	for(int i = 0; i < len; i++) {
 
 		// Initialise variable to store amount of parity bits passed //
 		int skipped = 0;
@@ -191,19 +203,19 @@ int decode(char *outputBuff, block input[], int len) {
 			// Value of current bit //
 			bit thisBit = getBit(input[i], j);
 
-			if(i != len/sizeof(block)-1) {
+			if(i != len-1) {
 
 				// Populate final decoded character //
 				output[currentChar] = modifyCharBit(output[currentChar], currentBit-currentChar*sizeof(char)*8, thisBit);
-			}
+				//pr_info("Decoding[%d]: c=%s\n", currentChar, output[currentChar]);
 
-			else {
+			} else {
 				chars = modifyBit(chars, j-skipped+(sizeof(block)*8-messageBits), thisBit);
 			}
 
 		}
 	}
-	memcpy(outputBuff, output, len);
+//	*retlen = len;
 	return 0;
 }
 
@@ -224,11 +236,11 @@ char modifyCharBit(char n, int p, bit b) {
 }
 
 bit getBit(block b, int i) {
-	return (b << i) & ((sizeof(block)*8-1) << 1);
+	return (b << i) & pow2(sizeof(block)*8 - 1);
 }
 
 bit getCharBit(char b, int i) {
-	return (b << i) & ((sizeof(char)*8-1) << 1);
+	return (b << i) & pow2(sizeof(char)*8 - 1);
 }
 
 block toggleBit(block b, int i) {

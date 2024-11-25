@@ -50,21 +50,18 @@ struct mtd_info *get_mtd_info(char *name) {
 
 
 int ecc_mtd_read(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, char *buf) {
-	block *obuf = kzalloc(len, GFP_KERNEL);
+	block obuf[len];
 	int ret = mtd_read(mtd, pos, len, retlen, (char*)obuf);
 	int rlen;
 	decode(buf, obuf, len, rlen);
-	kfree(obuf);
 	return ret;
 }
 
 int ecc_mtd_write(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, char *buf) {
-	block *ibuf = kzalloc(len, GFP_KERNEL);
+	block ibuf[len];
 	int rlen;
-	encode(ibuf, buf, len, &rlen);
-//	memcpy(ibuf, buf, len);
+	encode(ibuf, buf, len * 8, &rlen);
 	int ret = mtd_write(mtd, pos, len * sizeof(block), retlen, (char *)ibuf);
-	kfree(ibuf);
 	return ret;
 }
 
@@ -73,7 +70,11 @@ static int __init eccmtd_init(void) {
 //      sblkdev_add(0, 0, NULL, NULL);
 	sblkdev_init();
 	struct mtd_info *mtd = get_mtd_info("mtdram test device");
-	char *str = "abcdefghijklm";
+	if (!mtd) {
+		pr_warn("MTD device 'mtdram test device' wan't found, have you executed command?: 'modprobe mtdram total_size=32768'");
+		return 0;
+	}
+	char *str = "abcde";
 	char stro[32];
 	size_t rlen;
 	ecc_mtd_write(mtd, 0, strlen(str), &rlen, str);

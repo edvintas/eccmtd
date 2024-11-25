@@ -29,6 +29,9 @@ block modifyBit(block n, int p, bit b);                  // Function used to mod
 char modifyCharBit(char n, int p, bit b);                // Function used to modify a bit of a char to a specific value
 int multipleXor(int *indicies, int len);                 // Function used to XOR all the elements of a list together (used to locate error and determine values of parity bits)
 
+void printBlock(block i);
+
+
 int encode(block *output, char *input, int len, int *retlen) {
 
 	// Amount of bits in a block //
@@ -116,6 +119,8 @@ int encode(block *output, char *input, int len, int *retlen) {
 
 		// Add overall parity bit (total parity of onCount) //
 		thisBlock = modifyBit(thisBlock, 0, onCount & 1);
+        // Output final block //
+        printBlock(thisBlock);
 
 		encoded[i] = thisBlock;
 	}
@@ -134,6 +139,10 @@ int decode(char *output, block input[], int len, int *retlen) {
 	pr_info("Decoding: len=%d, bits=%d\n", len, bits);
 
 	for(int b = 0; b < len; b++) {
+        pr_info("On Block %d:\n", b);
+
+        // Print initial block //
+        printBlock(input[b]);
 
 		// Count of how many bits are "on" //
 		int onCount = 0;
@@ -245,4 +254,26 @@ bit getCharBit(char b, int i) {
 
 block toggleBit(block b, int i) {
 	return b ^ (1 << i);
+}
+
+void printBlock(block i) {
+    size_t size = sizeof(block) * sizeof(char) * 8;
+    size_t current_bit = size;
+
+    char str[size + 1];
+    if(!str) return;
+    str[size] = 0;
+
+    unsigned u = *(unsigned *)&i;
+    for(; current_bit--; u >>= 1)
+        str[current_bit] = u & 1 ? '1' : '0';
+
+   char line[7] = { 0 };
+    for (size_t i = 0; i < size; i++) {
+	line[i % 4] = str[i];
+        if (i % 4 == 3) {
+		pr_info("%s\n", line);
+        }
+    }
+	pr_info("-- end --\n");
 }

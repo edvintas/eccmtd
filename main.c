@@ -70,7 +70,7 @@ static int __init eccmtd_init(void) {
 //      sblkdev_add(0, 0, NULL, NULL);
 	sblkdev_init();
 	struct mtd_info *mtd = get_mtd_info("mtdram test device");
-	if (!mtd) {
+	if(!mtd) {
 		pr_warn("MTD device 'mtdram test device' wan't found, have you executed command?: 'modprobe mtdram total_size=32768'");
 		return 0;
 	}

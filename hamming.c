@@ -15,7 +15,7 @@
 #endif
 
 int pow2(int x) {
-	if (!x) {
+	if(!x) {
 		return 1;
 	}
 	return 2 << (x - 1);
@@ -119,8 +119,8 @@ int encode(block *output, char *input, int len, int *retlen) {
 
 		// Add overall parity bit (total parity of onCount) //
 		thisBlock = modifyBit(thisBlock, 0, onCount & 1);
-        // Output final block //
-        printBlock(thisBlock);
+		// Output final block //
+		printBlock(thisBlock);
 
 		encoded[i] = thisBlock;
 	}
@@ -139,10 +139,10 @@ int decode(char *output, block input[], int len, int *retlen) {
 	pr_info("Decoding: len=%d, bits=%d\n", len, bits);
 
 	for(int b = 0; b < len; b++) {
-        pr_info("On Block %d:\n", b);
+		pr_info("On Block %d:\n", b);
 
-        // Print initial block //
-        printBlock(input[b]);
+		// Print initial block //
+		printBlock(input[b]);
 
 		// Count of how many bits are "on" //
 		int onCount = 0;
@@ -257,23 +257,26 @@ block toggleBit(block b, int i) {
 }
 
 void printBlock(block i) {
-    size_t size = sizeof(block) * sizeof(char) * 8;
-    size_t current_bit = size;
+	size_t size = sizeof(block) * sizeof(char) * 8;
+	size_t current_bit = size;
 
-    char str[size + 1];
-    if(!str) return;
-    str[size] = 0;
+	char str[size + 1];
+	if(!str) {
+		return;
+	}
+	str[size] = 0;
 
-    unsigned u = *(unsigned *)&i;
-    for(; current_bit--; u >>= 1)
-        str[current_bit] = u & 1 ? '1' : '0';
+	unsigned u = *(unsigned *)&i;
+	for(; current_bit--; u >>= 1) {
+		str[current_bit] = u & 1 ? '1' : '0';
+	}
 
-   char line[7] = { 0 };
-    for (size_t i = 0; i < size; i++) {
-	line[i % 4] = str[i];
-        if (i % 4 == 3) {
-		pr_info("%s\n", line);
-        }
-    }
+	char line[7] = { 0 };
+	for(size_t i = 0; i < size; i++) {
+		line[i % 4] = str[i];
+		if(i % 4 == 3) {
+			pr_info("%s\n", line);
+		}
+	}
 	pr_info("-- end --\n");
 }

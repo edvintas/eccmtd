@@ -47,7 +47,7 @@
 
 static int sblkdev_major;
 static LIST_HEAD(sblkdev_device_list);
-static char *sblkdev_catalog = "sblkdev1,2048;sblkdev2,4096";
+extern char *sblkdev_catalog = "sblkdev1,2048;sblkdev2,4096";
 
 /*
  * sblkdev_init() - Entry point 'init'.
@@ -55,7 +55,7 @@ static char *sblkdev_catalog = "sblkdev1,2048;sblkdev2,4096";
  * Executed when the module is loaded. Parses the catalog parameter and
  * creates block devices.
  */
-int sblkdev_init(void)
+int sblkdev_init(void *mtd)
 {
 	int ret = 0;
 	int inx = 0;
@@ -106,6 +106,7 @@ int sblkdev_init(void)
 		}
 
 		dev = sblkdev_add(sblkdev_major, inx, name, capacity_value);
+		dev->data = mtd;
 		if(IS_ERR(dev)) {
 			ret = PTR_ERR(dev);
 			break;

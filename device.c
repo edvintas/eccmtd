@@ -7,6 +7,7 @@
 
 #include "device.h"
 #include "hamming.h"
+#include "eccm.h"
 
 #ifdef CONFIG_SBLKDEV_REQUESTS_BASED
 
@@ -29,9 +30,9 @@ static inline int process_request(struct request *rq, unsigned int *nr_bytes)
 		}
 
 		if(rq_data_dir(rq)) {
-			memcpy(dev->data + pos, buf, len); /* WRITE */
+			//FIXME:memcpy(dev->data + pos, buf, len); /* WRITE */
 		} else {
-			memcpy(buf, dev->data + pos, len); /* READ */
+			//FIXME:memcpy(buf, dev->data + pos, len); /* READ */
 		}
 		pos += len;
 		*nr_bytes += len;
@@ -87,15 +88,14 @@ static inline void process_bio(struct sblkdev_device *dev, struct bio *bio)
 			break;
 		}
 
-
+		size_t rlen;
+		struct mtd_info *mtd = (struct mtd_info *)dev->data;
 		if(bio_data_dir(bio)) {
-			//encode(dev->data + pos, buf, len); /* WRITE */
-			//size_t retlen;
-			//mtd_write(0, 0, 1, &retlen, dev->data + pos);
-			//int 	mtd_write (struct mtd_info *mtd, loff_t to, size_t len, size_t *retlen, const u_char *buf)
+			ecc_mtd_write(mtd, pos, 32, &rlen, buf); //FIXME: crash because of LEN too big? Hardcoded 32 for now... /* WRITE */
+			pr_info("mtd write rlen = %d", rlen);
 		} else {
-			//int 	mtd_read (struct mtd_info *mtd, loff_t from, size_t len, size_t *retlen, u_char *buf)
-			//decode(buf, dev->data + pos, len); /* READ */
+			ecc_mtd_read(mtd, pos, len, &rlen, buf); /* READ */
+		        pr_info("READ: POS = %d, LEN = %d, BUF='%s'", pos, len, buf);
 		}
 		pos += len;
 	}

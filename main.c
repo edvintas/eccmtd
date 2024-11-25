@@ -1,27 +1,37 @@
 #include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/timer.h>
 
 #include "eccmtd.h"
+#include "eccm.h"
 
-int mtdRW_init(void) {
-	struct mtd_info *mtd;
-	bool keep_going;
-	int n;
+MODULE_LICENSE("GPL");
+#define TEST
+#ifdef TEST
+#define TIMEOUT (3000)
+#else
+#define TIMEOUT (1000*60*5)
+#endif
 
-	printk(KERN_INFO "mtdRW: Start to unlock MTD partitions!\n");
+struct mtd_info *gmtd;
+static struct timer_list ecc_timer;
 
-	keep_going = true;
-	for(n = 0; keep_going; n++) {
-		mtd = get_mtd_device(NULL, n);
-		if(!IS_ERR(mtd)) {
-			mtd->flags |= MTD_WRITEABLE;
-			printk(KERN_INFO "mtdRW: Make mtd device writeable: %s\n", mtd->name);
-			put_mtd_device(mtd);
-		} else {
-			keep_going = false;
+void ecc_timer_callback(struct timer_list *timer) {
+	pr_info("Timer callback");
+	mod_timer(timer, jiffies + msecs_to_jiffies(TIMEOUT));
+	int size = 32;
+	for (size_t i = 0; i < 32; ++i) {
+		char stro[32];
+		size_t rlen;
+		//ecc_mtd_write(mtd, 0, strlen(str), &rlen, str);
+		//pr_info("RETLEN = %d", rlen);
+		//ecc_mtd_read(mtd, 0, rlen, &rlen, stro);
+		//FIXME: crash? if(ecc_mtd_read(gmtd, i, 2, rlen, stro))
+		{
+			//ecc_mtd_write()
 		}
+		pr_info("STRO = %s", stro);
 	}
-
-	return 0;
 }
 
 struct mtd_info *get_mtd_info(char *name) {
@@ -29,7 +39,7 @@ struct mtd_info *get_mtd_info(char *name) {
 	bool keep_going;
 	int n;
 
-	printk(KERN_INFO "mtdRW: Start to unlock MTD partitions!\n");
+	printk(KERN_INFO "Looking for MTD device: %s\n", name);
 
 	keep_going = true;
 	for(n = 0; keep_going; n++) {
@@ -48,7 +58,6 @@ struct mtd_info *get_mtd_info(char *name) {
 	return 0;
 }
 
-
 int ecc_mtd_read(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, char *buf) {
 	block obuf[len];
 	int ret = mtd_read(mtd, pos, len, retlen, (char*)obuf);
@@ -66,27 +75,31 @@ int ecc_mtd_write(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, cha
 }
 
 static int __init eccmtd_init(void) {
-	pr_info("eccm loaded 12344444");
-//      sblkdev_add(0, 0, NULL, NULL);
-	sblkdev_init();
+	pr_info("eccm loaded");
+	sblkdev_catalog = "eccmtd1,2048;eccmtdX,4096";
 	struct mtd_info *mtd = get_mtd_info("mtdram test device");
 	if(!mtd) {
 		pr_warn("MTD device 'mtdram test device' wan't found, have you executed command?: 'modprobe mtdram total_size=32768'");
 		return 0;
 	}
-	char *str = "abcde";
+	sblkdev_init(mtd);
+	gmtd = mtd;
+/*	char *str = "abcde";
 	char stro[32];
 	size_t rlen;
 	ecc_mtd_write(mtd, 0, strlen(str), &rlen, str);
 	pr_info("RETLEN = %d", rlen);
 	ecc_mtd_read(mtd, 0, rlen, &rlen, stro);
-	pr_info("STRO = %s", stro);
-//      dev = sblkdev_add(sblkdev_major, inx, name, capacity_value);
+	pr_info("STRO = %s", stro); */
+	timer_setup(&ecc_timer, ecc_timer_callback, 0);
+	mod_timer(&ecc_timer, jiffies + msecs_to_jiffies(TIMEOUT));
+//	add_timer(&ecc_timer);
 	return 0;
 }
 
 static void __exit eccmtd_exit(void) {
-	printk(KERN_INFO "eccm unloaded 45677777777");
+	pr_info("eccm unloaded");
+	del_timer(&ecc_timer);
 	sblkdev_exit();
 }
 

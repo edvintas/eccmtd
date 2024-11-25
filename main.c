@@ -7,7 +7,6 @@
 #include "eccmtd.h"
 #include "eccm.h"
 
-MODULE_LICENSE("GPL");
 #define TEST
 #ifdef TEST
 #define TIMEOUT (3000)
@@ -25,18 +24,26 @@ long errorsCount = 0;
 void ecc_timer_callback(struct timer_list *timer) {
 	pr_info("Timer callback");
 	mod_timer(timer, jiffies + msecs_to_jiffies(TIMEOUT));
+
+
+	char *str = "abcde";
+	char stro[32];
+	size_t rlen;
+	ecc_mtd_write(gmtd, 0, strlen(str), &rlen, str);
+	pr_info("RETLEN = %d", rlen);
+//	ecc_mtd_read(gmtd, 0, 10, &rlen, stro);
+//	pr_info("STRO = %s", stro);
+
 	int size = 32;
-	for (size_t i = 0; i < 32; ++i) {
-		char stro[32];
+	for (size_t i = 0; i < 10; i += 8) {
 		size_t rlen;
 		//ecc_mtd_write(mtd, 0, strlen(str), &rlen, str);
 		//pr_info("RETLEN = %d", rlen);
 		//ecc_mtd_read(mtd, 0, rlen, &rlen, stro);
-		//FIXME: crash? if(ecc_mtd_read(gmtd, i, 2, rlen, stro))
+		if(ecc_mtd_read(gmtd, 0, 10, &rlen, stro))
 		{
-			//ecc_mtd_write()
+			ecc_mtd_write(gmtd, 0, 10, &rlen, stro);
 		}
-		pr_info("STRO = %s", stro);
 	}
 }
 
@@ -119,16 +126,17 @@ static int __init eccmtd_init(void) {
 	}
 	sblkdev_init(mtd);
 	gmtd = mtd;
-/*	char *str = "abcde";
+
+	char *str = "abcde";
 	char stro[32];
 	size_t rlen;
 	ecc_mtd_write(mtd, 0, strlen(str), &rlen, str);
 	pr_info("RETLEN = %d", rlen);
 	ecc_mtd_read(mtd, 0, rlen, &rlen, stro);
-	pr_info("STRO = %s", stro); */
+	pr_info("STRO = %s", stro);
+
 	timer_setup(&ecc_timer, ecc_timer_callback, 0);
 	mod_timer(&ecc_timer, jiffies + msecs_to_jiffies(TIMEOUT));
-//	add_timer(&ecc_timer);
 
 	ent=proc_create("eccmtd",0660,NULL,&myops);
 	return 0;

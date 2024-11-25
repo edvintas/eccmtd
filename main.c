@@ -1,6 +1,8 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/timer.h>
+#include <linux/proc_fs.h>
+#include <asm/uaccess.h>
 
 #include "eccmtd.h"
 #include "eccm.h"
@@ -13,8 +15,12 @@ MODULE_LICENSE("GPL");
 #define TIMEOUT (1000*60*5)
 #endif
 
+#define BUFFER_SIZE 1024
+
 struct mtd_info *gmtd;
 static struct timer_list ecc_timer;
+
+long errorsCount = 0;
 
 void ecc_timer_callback(struct timer_list *timer) {
 	pr_info("Timer callback");
@@ -62,7 +68,9 @@ int ecc_mtd_read(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, char
 	block obuf[len];
 	int ret = mtd_read(mtd, pos, len, retlen, (char*)obuf);
 	int rlen;
-	decode(buf, obuf, len, rlen);
+	if(decode(buf, obuf, len, rlen)) {
+		errorsCount++;
+	}
 	return ret;
 }
 
@@ -73,6 +81,33 @@ int ecc_mtd_write(struct mtd_info *mtd, int pos, size_t len, size_t *retlen, cha
 	int ret = mtd_write(mtd, pos, len * sizeof(block), retlen, (char *)ibuf);
 	return ret;
 }
+
+static struct proc_dir_entry *ent;
+
+static ssize_t proc_read(struct file *file, char __user *usr_buf, size_t count, loff_t *pos)
+{
+        int rv = 0;
+        char buffer[BUFFER_SIZE];
+        static int completed = 0;
+
+        if (completed) {
+                completed = 0;
+                return 0;
+        }
+
+        completed = 1;
+
+        rv = sprintf(buffer, "Errors detected: %d\n", errorsCount);
+
+        // copies the contents of buffer to userspace usr_buf
+        copy_to_user(usr_buf, buffer, rv);
+
+        return rv;
+}
+
+static struct proc_ops myops = {
+	.proc_read = proc_read
+};
 
 static int __init eccmtd_init(void) {
 	pr_info("eccm loaded");
@@ -94,6 +129,8 @@ static int __init eccmtd_init(void) {
 	timer_setup(&ecc_timer, ecc_timer_callback, 0);
 	mod_timer(&ecc_timer, jiffies + msecs_to_jiffies(TIMEOUT));
 //	add_timer(&ecc_timer);
+
+	ent=proc_create("eccmtd",0660,NULL,&myops);
 	return 0;
 }
 
@@ -101,6 +138,7 @@ static void __exit eccmtd_exit(void) {
 	pr_info("eccm unloaded");
 	del_timer(&ecc_timer);
 	sblkdev_exit();
+	proc_remove(ent);
 }
 
 module_init(eccmtd_init);

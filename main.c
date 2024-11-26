@@ -29,20 +29,20 @@ void ecc_timer_callback(struct timer_list *timer) {
 	char *str = "abcde";
 	char stro[32];
 	size_t rlen;
-	ecc_mtd_write(gmtd, 0, strlen(str), &rlen, str);
+	//ecc_mtd_write(gmtd, 0, strlen(str), &rlen, str);
 	pr_info("RETLEN = %d", rlen);
 //	ecc_mtd_read(gmtd, 0, 10, &rlen, stro);
 //	pr_info("STRO = %s", stro);
 
 	int size = 32;
-	for (size_t i = 0; i < 10; i += 8) {
+	for (size_t i = 0; i < 1024; i += 10) {
 		size_t rlen;
 		//ecc_mtd_write(mtd, 0, strlen(str), &rlen, str);
 		//pr_info("RETLEN = %d", rlen);
 		//ecc_mtd_read(mtd, 0, rlen, &rlen, stro);
-		if(ecc_mtd_read(gmtd, 0, 10, &rlen, stro))
+		if(ecc_mtd_read(gmtd, i, 10, &rlen, stro))
 		{
-			ecc_mtd_write(gmtd, 0, 10, &rlen, stro);
+			ecc_mtd_write(gmtd, i, 10, &rlen, stro);
 		}
 	}
 }
